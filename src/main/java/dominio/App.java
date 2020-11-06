@@ -1,31 +1,20 @@
 package dominio;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.Scanner;
 
 import Excepciones.InformacionPaisException;
 import Excepciones.RastreadorIpException;
 import Excepciones.fixerioReqException;
-import modelos.Idioma;
 import modelos.Pais;
 import modelos.PaisInvocado;
-import modelos.PaisNombre;
-import modelos.PaisNombreDto;
-import servicio.Ip2countryPais;
-import servicio.ProveedorMonedaPais;
-import servicio.fixerMonedaPais;
-import servicio.restCountriesInformacionPais;
 
 public class App {
+	// trato de que en esta parte haya la menor cantidad de lógica posible, decidí delegar las excepciones hasta el último nivel
+	// en este caso solo hace un print de la excepcion
 
 	public static void main(String[] args) {
 		
-		RastreadorIP rastreador = new RastreadorIP(); // el rastreador deberia ser un singleton?
+		RastreadorIP rastreador = new RastreadorIP();
 		RepoPaises repoPais = RepoPaises.instancia();
 		
 		String mensaje_opciones = "Ingrese el código de la operación que desea realizar:\n "
@@ -59,6 +48,8 @@ public class App {
  		   }
    		
 		}
+   		
+   		//sc.close();
 		
 	}
 
@@ -93,6 +84,8 @@ public class App {
 		}
 		catch (RastreadorIpException e1) {
 			System.out.println("Error en el rastreador: " + e1);
+		}finally {
+//			sc.close();
 		}
 		
 		
@@ -118,9 +111,9 @@ public class App {
 		System.out.println("====================================================================");
 		System.out.println("Estadísticas: Distancias desde la cual se realizaron las consultas");
 		System.out.println("====================================================================");
-		System.out.println("Distancia más lejana desde Bs. As.: " + "Brasil - 2862 km" + "\n"
-				           + "Distancia más cercana desde Bs. As.: " + "Uruguay - 862 km" + "\n"
-				           + "Distancia promedio de todas las ejecuciones del servicio: " + "1350 km" + "");
+		System.out.println("Distancia más lejana desde Bs. As.: " + repoPais.getMasLejano() + "\n"
+				           + "Distancia más cercana desde Bs. As.: " +repoPais.getMasCercano() + "\n"
+				           + "Distancia promedio de todas las ejecuciones del servicio: " +  repoPais.getPromedio() + "");
 		System.out.println("====================================================================\n");
     }
 

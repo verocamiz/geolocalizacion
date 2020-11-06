@@ -49,6 +49,7 @@ public class restCountriesInformacionPais implements ProveedorInformacionPais {
         return pais;
 	}
 
+	// delego el seteo del objeto que voy a retornar a un metodo
 	private Pais mapearPais(PaisDto paisDto) {
 		Pais pais = new Pais();
 		List<Idioma> idiomas = new ArrayList<>();
@@ -90,6 +91,8 @@ public class restCountriesInformacionPais implements ProveedorInformacionPais {
 		return pais;
 	}
 
+	// el substring podria llegar a darme problemas si por alguna razon el formato fuera distinto,
+	// esta parte se podria mejorar
 	private String obtenerHora(String utc) {
 		int hora = 0;
 		int minutos = 0;
@@ -104,7 +107,7 @@ public class restCountriesInformacionPais implements ProveedorInformacionPais {
 		Instant horaUTC = instant.plus(hora, ChronoUnit.HOURS).plus(minutos,
 	        ChronoUnit.MINUTES);
 		
-		return horaUTC.toString().substring(12, 19);
+		return horaUTC.toString().substring(11, 19);
 		
 		
 	}

@@ -1,9 +1,7 @@
 package modelos;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Pais {
 
@@ -89,7 +87,7 @@ public String getIdiomasISO() {
 }
 
 public String getHoras() {
-		return String.join(" ", zonasHorarias.stream().map(x-> x.getHora() + " (" + x.getUtc() + ") " ).collect(Collectors.toList()));
+		return String.join(" ", zonasHorarias.stream().map(x-> x.getHora() + "(" + x.getUtc() + ") " ).collect(Collectors.toList()));
 		
 	
 }

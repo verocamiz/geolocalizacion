@@ -3,7 +3,6 @@ package servicio;
 import java.io.IOException;
 
 import config.VariablesGlobales;
-import modelos.Pais;
 import modelos.PaisNombre;
 import modelos.PaisNombreDto;
 import retrofit2.Call;

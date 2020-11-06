@@ -1,36 +1,34 @@
 package dominio;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import Excepciones.InformacionPaisException;
 import Excepciones.fixerioReqException;
 import config.VariablesGlobales;
-import modelos.Idioma;
 import modelos.Moneda;
-import modelos.MonedaDto;
-import modelos.Pais;
 import modelos.PaisInvocado;
 import modelos.PaisNombre;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-import servicio.Ip2countryPais;
 import servicio.ProveedorInformacionPais;
 import servicio.ProveedorMonedaPais;
-import servicio.ProveedorPais;
 import servicio.fixerMonedaPais;
 import servicio.restCountriesInformacionPais;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
+// las consultas a los service no son asincronicas, deberian serlo para contemplar el caso en que se hagan muchas peticiones en
+// simultaneo, ademas de implementar un load balancer
 public  class RepoPaises {
 	
 	private static RepoPaises instancia = null;
-	private static List<PaisInvocado> paisesConsultados;
+	// paisInvocado es una clase que por un lado tiene el pais con toda la informacion que trae de los service
+	// y por otro tiene un contador con la cantidad de veces que fue invocado ese pais y la distancia
+	private static List<PaisInvocado> paisesConsultados = new ArrayList<>();
 	private static ProveedorMonedaPais proveedorMoneda = fixerMonedaPais.instancia();
 	private static ProveedorInformacionPais proveedorInformacion = restCountriesInformacionPais.instancia();
 	
-    private RepoPaises() { // singleton para instanciarlo una unica vez
+    private RepoPaises() {
         RepoPaises.paisesConsultados = new ArrayList<>();
     }
 
@@ -46,42 +44,40 @@ public  class RepoPaises {
 		
 		boolean existe =paisesConsultados.stream().anyMatch(p -> p.getPais().getNombre().getCodigo3().equals( nombrePais.getCodigo3()));
 		
+		// si el pais existe en la lista paisesConsultados, lo busco en la lista y me lo traigo
 		if(existe) {
 			paisInvocado = getPais(nombrePais.getCodigo3(),nombrePais);
-			System.out.println("si existe el pais en la lista");
-			
-		} else {
-			System.out.println("no existe el pais en la lista");
 			
 		} 
 		
 		try {
+			// obtengo el pais del service
 			paisInvocado.setPais(proveedorInformacion.obtenerInformacionPais(nombrePais.getCodigo3()));
 		} 
 		catch (IOException e) {
 			throw new InformacionPaisException(e.getMessage());
 		}
 		
+		// obtengo la cotizacion
 		obtenerCotizacion(paisInvocado.getPais().getMonedas());
 		
 		paisInvocado.aumentarCantidadInvocado();
 		paisInvocado.getPais().setNombre(nombrePais);
 		
+		// si el pais no existia en la lista,   establezco la distancia calculada y lo agrego
 		if(!existe){
 			
 			paisInvocado.setDistancia(obtenerDistancia(paisInvocado.getPais().getLatitud(),paisInvocado.getPais().getLongitud()));
 			paisesConsultados.add(paisInvocado);
 		} 
 		
+		// me guardo las ips que se consultaron
 		if(!paisInvocado.getIps().stream().anyMatch(x -> x.equals(ip))){
 		 paisInvocado.agregarIP(ip);
 		} 
 		
 		
 		return paisInvocado;
-		// veo si existe el pais en la lista, si existe lo traigo de la lista
-		//despues tengo que ir a la api a buscar el pais la cotizacion y la distancia
-		// el pais y la cotizacion cambiar, la distancia no entonces si ya existe no necesito la distancia
 	}
 
 	private static PaisInvocado getPais(String codigo3, PaisNombre nombrePais) {
@@ -91,7 +87,6 @@ public  class RepoPaises {
 	}
 
 	public static void obtenerCotizacion(List<Moneda> monedas) {
-		// para cada moneda llamo al servicio para que calcule la cotizacion y la seteo
 		monedas.stream().forEach((m)-> {
 			try {
 				m.setCotizacionDolar(proveedorMoneda.obtenerCotizacion(m.getCodigo()));
@@ -130,4 +125,48 @@ public  class RepoPaises {
 	    return Math.sqrt(distance);
 	}
 
+	public String getMasLejano() { // logica repetida, revisar
+		String lejano = "---";
+		
+		if(!paisesConsultados.isEmpty()) {
+			PaisInvocado pais = paisesConsultados.stream().max(Comparator.comparing(p -> p.getDistancia() )).get();
+			lejano = pais.getPais().getNombre().getNombre()+" - " + String.format("%.2f", pais.getDistancia()) + " Kms";
+		}
+		
+		return lejano;
+	}
+
+	public String getMasCercano() {
+        String cercano = "---";
+        
+        if(!paisesConsultados.isEmpty()) {
+		PaisInvocado pais = paisesConsultados.stream().min(Comparator.comparing(p -> p.getDistancia() )).get();
+		cercano = pais.getPais().getNombre().getNombre()+" - " + String.format("%.2f", pais.getDistancia()) + " Kms";
+        }
+		
+		return cercano;
+	}
+
+	public String getPromedio() {
+		String promedio = "---";
+		if(!paisesConsultados.isEmpty()) {
+			double acumulador = sum(paisesConsultados.stream().map(x -> x.getDistancia() * x.getCantidadInvocado()).collect(Collectors.toList()));
+			double cantInvocaciones = sum(paisesConsultados.stream().map(x ->   Double.valueOf(x.getCantidadInvocado())).collect(Collectors.toList()));
+			promedio = String.format("%.2f", acumulador/cantInvocaciones)+ " Kms" ;
+			 
+		}
+		
+		return promedio;
+		
+	}
+	
+	public static  double sum(List<Double> distancias) {
+		   double result = 0;
+		   for (double value:distancias)
+		     result += value;
+		   return result;
+	}
+	
+
 }
+
